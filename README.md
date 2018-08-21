@@ -23,7 +23,7 @@ API and the write_mef_channel module need to be compiled in C, and exported as a
 isn't officially supporiting C#, but the code is provided to show an example of use.
 
 Compiling this code under C, which is extensively tested on Mac OS X, is relatively simple.  The files
-in this repository, as well as the files in the meflib repository, and be compiled using "gcc *.c".
+in this repository, as well as the files in the meflib repository, can be compiled using "gcc *.c".
 
 Multiple channels can be created within one program.  The example programs only show one channel, but
 the code is fully object-oriented in the sense that many channels can be created in one program.  We don't

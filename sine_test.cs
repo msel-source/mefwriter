@@ -200,9 +200,8 @@ namespace SineTestApp
   
             Console.WriteLine("Done adding data to MEF channel.");
 
-            // close MEF channels
-            for (int k = 0; k < 4; k++)
-                close_mef_channel(ref mef_channel_state_struct);
+            // close MEF channel
+            close_mef_channel(ref mef_channel_state_struct);
 
             Console.WriteLine("Closed MEF channel.");
             Console.WriteLine("Press enter to end the program.");

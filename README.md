@@ -1,8 +1,8 @@
 # mefwriter
 Code to simplify compressing data into the MEF 3.0 format
 
-This module of code (write_mef_channel.c/h) is designed to be used in conjunction with the base
-MEF 3.0 library API (meflib.c/h and mefrec.c/h).
+This module of code (write_mef_channel files) is designed to be used in conjunction with the base
+MEF 3.0 [library API](https://github.com/msel-source/meflib) (meflib and mefrec files).
 
 Each channel of data, typically an electrode pair or voltage measurement, is a time-series array of data.
 

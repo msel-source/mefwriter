@@ -11,7 +11,7 @@ it is the user's job to sort the data before using this module.
 
 (Note: it is not an error to have un-ordered data in the MEF 3.0 format, but any gap in time, either forwards
 or backwards in time, will be treated as a discontinuity.  The threshold for discontinuity is specified
-in write_mef_channel.h.  1/10 of a second is the default.)
+in write_mef_channel.h.  One tenth of a second, or 0.1 seconds, is the default.)
 
 Two example programs, named sine-test, are provided to demonstrate ease of use of this module.  The basic
 pattern is 1) a channel is created, 2) data is added to the channel, and 3) the channel is closed.  Though

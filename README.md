@@ -42,3 +42,5 @@ will determine how well the compression works.  We like to use 1 second blocks f
 such as 30kHz.  For low frequency data, such as 250 or 500 Hz, we like 15 second blocks, which seems to
 be a good tradeoff between compression and ease-of-use for decompressing data later on.  If blocks get
 too large, then a lot of data has to be decompressed to find what you are looking for.
+
+This software is licensed under the Apache software license 2.0. See LICENSE for details.

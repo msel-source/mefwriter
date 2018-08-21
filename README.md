@@ -26,11 +26,14 @@ Compiling this code under C, which is extensively tested on Mac OS X, is relativ
 in this repository, as well as the files in the meflib repository, can be compiled using "gcc *.c".
 
 Multiple channels can be created within one program.  The example programs only show one channel, but
-the code is fully object-oriented in the sense that many channels can be created in one program.  We don't
-guarantee thread safety, but the only issue we are aware of is the timestamp-offset generation issue,
-where every MEF 3.0 recording session has one (and only one) offset for timestamp encryption.
-Generally we implement timestamp offsetting even in cases where encryption is not used.
-The offset is generated in new channels in the process_filled_block() subroutine in write_mef_channel.c.
+the code is fully object-oriented in the sense that many channels can be created in one program.  While don't
+guarantee thread safety (such as when adding data to multiple channels simultaneously), the only issue we are 
+aware of is the timestamp-offset generation issue, where every MEF 3.0 recording session has one (and only one)
+offset for timestamp encryption.  Generally we implement timestamp offsetting even in cases where encryption 
+is not used.  The offset is generated in new channels in the process_filled_block() subroutine in 
+write_mef_channel.c, which is where a mutex could be added.
+
+Do not add data to the same channel from multiple simultaneous threads.
 
 When designing RED (range encoded differences) block sizes for channels, our research suggests optimal 
 compression occurs in the 20000 to 30000 samples-per-block range.  Of course the nature of the data

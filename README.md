@@ -15,7 +15,7 @@ in write_mef_channel.h.  One tenth of a second, or 0.1 seconds, is the default.)
 
 Two example programs, named sine-test, are provided to demonstrate ease of use of this module.  The basic
 pattern is 1) a channel is created, 2) data is added to the channel, and 3) the channel is closed.  Though
-not shown in the example programs, more data can be added to an existing channel using the append function,
+not shown in the example programs, more data can be added to a pre-existing channel using the append function,
 and this will create a new segment of data in the channel.
 
 The example programs are in both C and C#.  With C# things are a little more tricky, since the base MEF 3.0

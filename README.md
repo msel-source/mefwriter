@@ -26,7 +26,7 @@ Compiling this code under C, which is extensively tested on Mac OS X, is relativ
 in this repository, as well as the files in the meflib repository, can be compiled using "gcc *.c".
 
 Multiple channels can be created within one program.  The example programs only show one channel, but
-the code is fully object-oriented in the sense that many channels can be created in one program.  While don't
+the code is fully object-oriented in the sense that many channels can be created in one program.  While we don't
 guarantee thread safety (such as when adding data to multiple channels simultaneously), the only issue we are 
 aware of is the timestamp-offset generation issue, where every MEF 3.0 recording session has one (and only one)
 offset for timestamp encryption.  Generally we implement timestamp offsetting even in cases where encryption 

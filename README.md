@@ -43,4 +43,7 @@ such as 30kHz.  For low frequency data, such as 250 or 500 Hz, we like 15 second
 be a good tradeoff between compression and ease-of-use for decompressing data later on.  If blocks get
 too large, then a lot of data has to be decompressed to find what you are looking for.
 
+This module is not intended to be the definitive way to generate MEF 3.0 files.  It is simply one approach
+that is generalized and is suitable for many applications.
+
 This software is licensed under the Apache software license 2.0. See [LICENSE](./LICENSE) for details.

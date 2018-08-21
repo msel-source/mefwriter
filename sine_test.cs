@@ -195,7 +195,10 @@ namespace SineTestApp
                 packet_times[i] = (ulong)(base_timestamp + (i * ((1e6) / sampling_frequency)));  // extrapolate, putting into microseconds
             }
 
-            // add buffered data to MEF channel    
+            // add buffered data to MEF channel
+            // note: write_mef_channel_data can be called many times sequentially, so data can be compressed to MEF as the data
+            // arrives.  The only caveat is that it must be pre-sorted in increasing time order.  
+            // write_mef_channel_data() will not do any time sorting.
             write_mef_channel_data(ref mef_channel_state_struct, packet_times, samps, 10000, seconds_per_block, sampling_frequency);
   
             Console.WriteLine("Done adding data to MEF channel.");

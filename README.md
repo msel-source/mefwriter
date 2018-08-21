@@ -33,7 +33,8 @@ offset for timestamp encryption.  Generally we implement timestamp offsetting ev
 is not used.  The offset is generated in new channels in the process_filled_block() subroutine in 
 write_mef_channel.c, which is where a mutex could be added.
 
-Do not add data to the same channel from multiple simultaneous threads.
+Do not add data to the same channel simultaneously from multiple threads.  There is no good reason to do that
+anyway, since data might not be ordered properly.
 
 When designing RED (range encoded differences) block sizes for channels, our research suggests optimal 
 compression occurs in the 20000 to 30000 samples-per-block range.  Of course the nature of the data

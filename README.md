@@ -14,9 +14,10 @@ or backwards in time, will be treated as a discontinuity.  The threshold for dis
 in write_mef_channel.h.  One tenth of a second, or 0.1 seconds, is the default.)
 
 The example program, named sine-test, is provided to demonstrate ease of use of this module.  The basic
-pattern is 1) a channel is created, 2) data is added to the channel, and 3) the channel is closed.  Though
-not shown in the example program, more data can be added to a pre-existing channel using the append function,
-and this will create a new segment of data in the channel.
+pattern is 1) a channel is created, 2) data is added to the channel, and 3) the channel is closed.  The data
+need not be added all at once; step 2 in the above list can be done many times, in between steps 1 and 3.  
+Though not shown in the example program, more data can be added to a pre-existing (and closed) channel using 
+the append function, and this will create a new segment of data in the channel.
 
 The example program is in both C and C#.  With C# things are a little more tricky, since the base MEF 3.0
 API and the write_mef_channel module need to be compiled in C, and exported as a .dll.  The MSEL lab

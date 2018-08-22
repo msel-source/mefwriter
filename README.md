@@ -1,8 +1,10 @@
 # mefwriter
-Code to simplify compressing data into the MEF 3.0 format
+Code to simplify compressing data into the MEF 3.0 format.
 
 This module of code (write_mef_channel files) is designed to be used in conjunction with the base
 MEF 3.0 [library API](https://github.com/msel-source/meflib) (meflib and mefrec files).
+
+General usage instructions:
 
 Each channel of data, typically an electrode pair or voltage measurement, is a time-series array of data.
 
@@ -25,6 +27,8 @@ isn't officially supporiting C#, but the code is provided to show an example of 
 
 Compiling this code under C, which is extensively tested on Mac OS X, is relatively simple.  The files
 in this repository, as well as the files in the meflib repository, can be compiled using "gcc *.c".
+
+Detailed usage notes:
 
 Multiple channels can be created within one program.  The example programs only show one channel, but
 the code is fully object-oriented in the sense that many channels can be created in one program.  While we don't

@@ -10,6 +10,8 @@ This module is not intended to be the definitive way to generate MEF 3.0 files. 
 that is generalized and is suitable for many applications.  The intention is to make MEF 3.0 usable,
 without requiring a deep understanding of the details of the format.
 
+Some sample data created using this module can be found [here](https://www.dropbox.com/sh/334r3ldwqe989ec/AADFjs9GcxhEpf3SwWIE75SVa?dl=0).
+
 General usage instructions:
 
 This module assumes the timestamps are in increasing order, so if the original data isn't ordered properly,

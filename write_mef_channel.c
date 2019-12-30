@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2018, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2019, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -329,7 +329,7 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     METADATA_SECTION_3	*md3;
     
     channel_state->if_appending = 0;
-    fprintf(stderr, "sizeof struct: %d\n", sizeof(CHANNEL_STATE));
+    //fprintf(stderr, "sizeof struct: %d\n", sizeof(CHANNEL_STATE));
     
     //fprintf(stderr, "in initialize_mef_channel_data()\n");
     
@@ -362,9 +362,9 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     extract_path_parts(mef3_session_directory, mef3_session_path, mef3_session_name, extension);
     MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
     
-    fprintf(stdout, "path: %s\n", mef3_session_path);
+    //fprintf(stdout, "path: %s\n", mef3_session_path);
     // make mef3 session directory
-    sprintf(command, "mkdir \"%s\"", mef3_session_path);
+    sprintf(command, "mkdir \"%s\" 2> /dev/null", mef3_session_path);
     system(command);
     
     // set up a generic fps for universal header and password data
@@ -402,7 +402,7 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     // save this for later for creating new segments
     strcpy(channel_state->channel_path, channel_path);
     
-    fprintf(stdout, "segment path: %s\n", segment_path);
+    //fprintf(stdout, "segment path: %s\n", segment_path);
     // make mef3 segment directory
     sprintf(segment_path, "%s/%s.%s", channel_path, segment_name, SEGMENT_DIRECTORY_TYPE_STRING);
     sprintf(command, "mkdir %s", segment_path);
@@ -563,7 +563,7 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
     
     // only care about generating offset times if this is a brand-new session.
     // if we are appending to existing session, we alrady have offset times
-    if (channel_state->if_appending == 0)
+    if ((channel_state->if_appending == 0) && (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT)))
     {
         // this only be done for one channel, assumes all channels have same offset
         if (MEF_globals->recording_time_offset == MEF_GLOBALS_RECORDING_TIME_OFFSET_DEFAULT) {
@@ -687,7 +687,8 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
     // update metadata recording_duration and end_time for all files
     uh_meta->end_time = block_hdr_time + (si8) (((((sf8) channel_state->rps->block_header->number_of_samples + 1) / md2->sampling_frequency) * (sf8) 1e6) + (sf8) 0.5);
     // needs to be offset, since universal header will always be written unencrypted
-    apply_recording_time_offset(&uh_meta->end_time);
+    if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+        apply_recording_time_offset(&uh_meta->end_time);
     uh_data->end_time = uh_meta->end_time;
     uh_inds->end_time = uh_meta->end_time;
     // yes, this is totally backwards, but it has to be this way because both values are offset (offset values are represented as negative values)
@@ -1315,7 +1316,8 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     
     // these are offset since they are not encrypted for both rdat and ridx
     new_header->time = unixTimestamp;
-    apply_recording_time_offset(&(new_header->time));
+    if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+        apply_recording_time_offset(&(new_header->time));
     new_index->time = new_header->time;
     
     // update index offset before modifying rdat_file_offset variable, so we get beginning of record offset
@@ -1377,16 +1379,22 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         annotation_state->rdat_fps->universal_header->start_time = unixTimestamp;
         annotation_state->ridx_fps->universal_header->start_time = unixTimestamp;
         // apply offset, since universal header is always written unencrypted
-        apply_recording_time_offset(&annotation_state->rdat_fps->universal_header->start_time);
-        apply_recording_time_offset(&annotation_state->ridx_fps->universal_header->start_time);
+        if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+        {
+            apply_recording_time_offset(&annotation_state->rdat_fps->universal_header->start_time);
+            apply_recording_time_offset(&annotation_state->ridx_fps->universal_header->start_time);
+        }
     }
     
     // update end_time
     annotation_state->rdat_fps->universal_header->end_time = unixTimestamp;
     annotation_state->ridx_fps->universal_header->end_time = unixTimestamp;
     // apply offset, since universal header is always written unencrypted
-    apply_recording_time_offset(&annotation_state->rdat_fps->universal_header->end_time);
-    apply_recording_time_offset(&annotation_state->ridx_fps->universal_header->end_time);
+    if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+    {
+        apply_recording_time_offset(&annotation_state->rdat_fps->universal_header->end_time);
+        apply_recording_time_offset(&annotation_state->ridx_fps->universal_header->end_time);
+    }
     
     // update max_entry_size, if necessary
     if ((annotation_state->rdat_fps->universal_header->maximum_entry_size < max_entry_size) ||

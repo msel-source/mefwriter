@@ -856,7 +856,7 @@ si4 write_mef_channel_data( CHANNEL_STATE *channel_state,
             }
             
             // mark next block as being discontinuous if discontinuity is found
-            if ((packet_times[j] - last_chan_timestamp) >= DISCONTINUITY_TIME_THRESHOLD)
+            if (abs((((si8)(packet_times[j]) - (si8)last_chan_timestamp))) >= DISCONTINUITY_TIME_THRESHOLD)
             {
                 discontinuity_flag = 1;
                 block_boundary = packet_times[j];

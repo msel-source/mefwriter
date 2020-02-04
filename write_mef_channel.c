@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2019, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -691,8 +691,11 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
         apply_recording_time_offset(&uh_meta->end_time);
     uh_data->end_time = uh_meta->end_time;
     uh_inds->end_time = uh_meta->end_time;
-    // yes, this is totally backwards, but it has to be this way because both values are offset (offset values are represented as negative values)
-    md2->recording_duration = uh_meta->start_time - uh_meta->end_time;
+    
+    md2->recording_duration = uh_meta->end_time - uh_meta->start_time;
+	// offset time values could be negative, so reverse sign if negative
+	if (md2->recording_duration < 0)
+		md2->recording_duration = 0 - md2->recording_duration;
     
     // update number_of_entries
     uh_data->number_of_entries = uh_data->number_of_entries + 1;
@@ -954,14 +957,22 @@ si4 check_for_new_segment(CHANNEL_STATE *channel_state, ui8 start_time)
     si1 segment_path[MEF_FULL_FILE_NAME_BYTES];
     si1	command[512];
     TIME_SERIES_METADATA_SECTION_2	*md2;
+	extern MEF_GLOBALS	*MEF_globals;
     
     // ignore this function if we're still writing the first block to the first segment
     if (channel_state->next_segment_start_time == 0)
         return(0);
     
-    // see if we need to start a new semgment.  Logic seems backwards because of offset times
-    if (start_time > channel_state->next_segment_start_time)
-        return(0);
+	if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+	{
+		if (start_time > channel_state->next_segment_start_time)
+			return(0);
+	}
+	else
+	{
+		if (start_time < channel_state->next_segment_start_time)
+			return(0);
+	}
     
     ts_inds_fps = channel_state->ts_inds_fps;
     ts_data_fps = channel_state->ts_data_fps;
@@ -1053,8 +1064,10 @@ si4 check_for_new_segment(CHANNEL_STATE *channel_state, ui8 start_time)
     md2->maximum_contiguous_samples = 0;
     
     // do internal channel_state variable resets
-    // update next segment start (subtract because we're dealing with offset times)
-    channel_state->next_segment_start_time -= (channel_state->num_secs_per_segment * 1e6);
+	if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+		channel_state->next_segment_start_time -= (channel_state->num_secs_per_segment * 1e6);
+	else
+		channel_state->next_segment_start_time += (channel_state->num_secs_per_segment * 1e6);
     // these internal variables are used to correctly update md2 values
     channel_state->discont_contiguous_blocks = 0;
     channel_state->discont_contiguous_samples = 0;
@@ -1310,12 +1323,15 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         new_header->bytes = sizeof(MEFREC_Seiz_1_0);
     }
     
-    // if we haven't already calculated an offset, do it now using our time and time zone
-    if (MEF_globals->recording_time_offset == MEF_GLOBALS_RECORDING_TIME_OFFSET_DEFAULT) {
-        generate_recording_time_offset(unixTimestamp, (si4)(annotation_state->gmt_offset * 3600.0));
-    }
+	if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+	{
+		// if we haven't already calculated an offset, do it now using our time and time zone
+		if (MEF_globals->recording_time_offset == MEF_GLOBALS_RECORDING_TIME_OFFSET_DEFAULT) {
+			generate_recording_time_offset(unixTimestamp, (si4)(annotation_state->gmt_offset * 3600.0));
+		}
+	}
     
-    // these are offset since they are not encrypted for both rdat and ridx
+    // these can be offset since they are not encrypted for both rdat and ridx
     new_header->time = unixTimestamp;
     if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
         apply_recording_time_offset(&(new_header->time));

@@ -1,5 +1,5 @@
 // Multiscale Electrophysiology Format (MEF) version 3.0
-// Copyright 2018, Mayo Foundation, Rochester MN. All rights reserved.
+// Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
 // Written by Matt Stead, Ben Brinkmann, and Dan Crepeau.
 
 // Usage and modification of this source code is governed by the Apache 2.0 license.
@@ -23,6 +23,8 @@
 #include <math.h>
 #include "write_mef_channel.h"
 
+extern MEF_GLOBALS	*MEF_globals;
+
 int main()
 {
     int i;
@@ -38,6 +40,7 @@ int main()
     
     // initialize MEF3 library
     (void) initialize_meflib();
+    MEF_globals->recording_time_offset_mode = RTO_IGNORE;  // turn off timestamp offsetting by default
     
     // initialize variables
     sampling_frequency = 1000.0;   // Hz

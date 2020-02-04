@@ -782,8 +782,9 @@ __declspec (dllexport)
 
 si4 initialize_meflib_dll()
 {
-    
     (void)initialize_meflib();
+ 
+    MEF_globals->recording_time_offset_mode = RTO_IGNORE;  // turn off timestamp offsetting by default
     
     return 0;
 }

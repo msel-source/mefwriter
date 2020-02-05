@@ -774,7 +774,7 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
     
     // fprintf(stderr, "done with process_filled_block()");
     
-    update_metadata(channel_state);
+    update_metadata(channel_state);  // necessary for real-time applications, otherwise, comment out this line.
     
     return(0);
 }
@@ -1187,7 +1187,7 @@ si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
     si1         extension[TYPE_BYTES];
     si1			mef3_session_path[MEF_FULL_FILE_NAME_BYTES], mef3_session_name[MEF_BASE_FILE_NAME_BYTES];
     
-    fprintf(stderr, "sizeof annotation_state struct: %d\n", sizeof(ANNOTATION_STATE));
+    //fprintf(stderr, "sizeof annotation_state struct: %d\n", sizeof(ANNOTATION_STATE));
     
     annotation_state->gmt_offset = gmt_offset;
     
@@ -1216,12 +1216,12 @@ si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
         temp_directives.close_file = MEF_FALSE;
         temp_directives.open_mode = FPS_R_OPEN_MODE;
         
-        fprintf(stderr, "Reading existing rdat and ridx files.\n");
+        //fprintf(stderr, "Reading existing rdat and ridx files.\n");
         // read .rdat and .ridx files, leave file pointers open at the end of the files
         annotation_state->rdat_fps = read_MEF_file(NULL, file_name_temp, NULL, NULL, &(temp_directives), USE_GLOBAL_BEHAVIOR);
         sprintf(file_name_temp, "%s.mefd/%s.ridx", dir_name, mef3_session_name);
         annotation_state->ridx_fps = read_MEF_file(NULL, file_name_temp, NULL, NULL, &(temp_directives), USE_GLOBAL_BEHAVIOR);
-        fprintf(stderr, "Read existing rdat and ridx files.\n");
+        //fprintf(stderr, "Read existing rdat and ridx files.\n");
         
         // determine how big files are
         fseek(annotation_state->rdat_fps->fp, 0, SEEK_END);
@@ -1290,7 +1290,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     
     mefrec_seiz = NULL;
     
-    if (!strcmp(type, "Siez"))
+    if (!strcmp(type, "Siez") && !strcmp(type, "Note"))
         return 0;
     
     if (annotation_state->rdat_fps == NULL)
@@ -1321,6 +1321,10 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     if (!strcmp(type, "Seiz"))
     {
         new_header->bytes = sizeof(MEFREC_Seiz_1_0);
+    }
+    if (!strcmp(type, "Note"))
+    {
+        new_header->bytes = strlen(annotation) + 1;  // add one for null terminator
     }
     
 	if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
@@ -1363,8 +1367,20 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         max_entry_size = sizeof(MEFREC_Seiz_1_0) + sizeof(RECORD_HEADER);
         
         // calculate CRC
-        new_header->record_CRC = CRC_calculate(new_header + CRC_BYTES, sizeof(RECORD_HEADER) - CRC_BYTES);
-        new_header->record_CRC = CRC_update(mefrec_seiz, (size_t)sizeof(MEFREC_Seiz_1_0), new_header->record_CRC);
+        new_header->record_CRC = CRC_calculate((ui1*)new_header + CRC_BYTES, sizeof(RECORD_HEADER) - CRC_BYTES);
+        new_header->record_CRC = CRC_update((ui1*)mefrec_seiz, (size_t)sizeof(MEFREC_Seiz_1_0), new_header->record_CRC);
+    }
+    if (!strcmp(type, "Note"))
+    {
+        // calculate offset for record data file
+        annotation_state->rdat_file_offset += strlen(annotation) + 1;  // add one for null terminator
+        
+        // calculate offset for record data file
+        max_entry_size = strlen(annotation) + 1 + sizeof(RECORD_HEADER);
+        
+        // calculate CRC
+        new_header->record_CRC = CRC_calculate((ui1*)new_header + CRC_BYTES, sizeof(RECORD_HEADER) - CRC_BYTES);
+        new_header->record_CRC = CRC_update((ui1*)annotation, (size_t)(strlen(annotation) + 1), new_header->record_CRC);
     }
     
     // we know the CRC for the record header (crc of header and body) so now we can write them.
@@ -1372,6 +1388,10 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     if (!strcmp(type, "Seiz"))
     {
         (void)e_fwrite(mefrec_seiz, sizeof(ui1), (size_t)sizeof(MEFREC_Seiz_1_0), annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    }
+    if (!strcmp(type, "Note"))
+    {
+        (void)e_fwrite(annotation, sizeof(ui1), (size_t)(strlen(annotation) + 1), annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
     }
     // write index
     (void)e_fwrite(new_index, sizeof(ui1), (size_t)sizeof(RECORD_INDEX), annotation_state->ridx_fps->fp, annotation_state->ridx_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
@@ -1423,20 +1443,20 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     
     
     // update body CRCs
-    annotation_state->rdat_fps->universal_header->body_CRC = CRC_update(new_header, (size_t)sizeof(RECORD_HEADER), annotation_state->rdat_fps->universal_header->body_CRC);
+    annotation_state->rdat_fps->universal_header->body_CRC = CRC_update((ui1*)new_header, (size_t)sizeof(RECORD_HEADER), annotation_state->rdat_fps->universal_header->body_CRC);
     if (!strcmp(type, "Seiz"))
     {
-        annotation_state->rdat_fps->universal_header->body_CRC = CRC_update(mefrec_seiz, (size_t)sizeof(MEFREC_Seiz_1_0), annotation_state->rdat_fps->universal_header->body_CRC);
+        annotation_state->rdat_fps->universal_header->body_CRC = CRC_update((ui1*)mefrec_seiz, (size_t)sizeof(MEFREC_Seiz_1_0), annotation_state->rdat_fps->universal_header->body_CRC);
     }
-    annotation_state->ridx_fps->universal_header->body_CRC = CRC_update(new_index,  (size_t)sizeof(RECORD_INDEX),  annotation_state->ridx_fps->universal_header->body_CRC);
+    annotation_state->ridx_fps->universal_header->body_CRC = CRC_update((ui1*)new_index,  (size_t)sizeof(RECORD_INDEX),  annotation_state->ridx_fps->universal_header->body_CRC);
     
     // update number_of_entries for both files
     annotation_state->rdat_fps->universal_header->number_of_entries++;
     annotation_state->ridx_fps->universal_header->number_of_entries++;
     
     // re-calculate header CRC for index and data files.  Body CRCs for both files should already be up-to-date.
-    annotation_state->rdat_fps->universal_header->header_CRC = CRC_calculate(annotation_state->rdat_fps->raw_data + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
-    annotation_state->ridx_fps->universal_header->header_CRC = CRC_calculate(annotation_state->ridx_fps->raw_data + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
+    annotation_state->rdat_fps->universal_header->header_CRC = CRC_calculate((ui1*)annotation_state->rdat_fps->raw_data + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
+    annotation_state->ridx_fps->universal_header->header_CRC = CRC_calculate((ui1*)annotation_state->ridx_fps->raw_data + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
     
     // rewrite universal headers
     // re-write data universal header and then go back to where we were

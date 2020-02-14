@@ -1490,10 +1490,6 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     (void)e_fwrite(annotation_state->ridx_fps->universal_header, sizeof(UNIVERSAL_HEADER), (size_t)1, annotation_state->ridx_fps->fp, annotation_state->ridx_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
     e_fseek(annotation_state->ridx_fps->fp, annotation_state->ridx_file_offset, SEEK_SET, annotation_state->ridx_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
     
-    // done re-writing headers, close files
-    fclose(annotation_state->rdat_fps->fp);
-    fclose(annotation_state->ridx_fps->fp);
-    
     // free memory
     if (!strcmp(type, "Seiz"))
     {
@@ -1512,6 +1508,12 @@ __declspec (dllexport)
 si4 close_annotation(ANNOTATION_STATE* annotation_state)
 {
     // TBD clean up memory
+    
+    // close files
+    if (annotation_state->rdat_fps->fp != NULL)
+        fclose(annotation_state->rdat_fps->fp);
+    if (annotation_state->ridx_fps->fp != NULL)
+        fclose(annotation_state->ridx_fps->fp);
     
     return 0;
 }

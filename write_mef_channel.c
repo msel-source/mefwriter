@@ -1287,6 +1287,8 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     
     RECORD_HEADER *new_header;
     RECORD_INDEX *new_index;
+    si4 pad_bytes;
+    static const si1 pad_bytes_string[] = "~~~~~~~~~~~~~~~";  // 15 tildes, so we can fwrite between 0 and 15 of them to pad a record
     
     mefrec_seiz = NULL;
     
@@ -1318,6 +1320,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     new_index->encryption = 0;
     new_header->bytes = 0;
     
+    // calculate bytes to put in header
     if (!strcmp(type, "Seiz"))
     {
         new_header->bytes = sizeof(MEFREC_Seiz_1_0);
@@ -1326,6 +1329,13 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     {
         new_header->bytes = strlen(annotation) + 1;  // add one for null terminator
     }
+    
+    // calculate pad bytes for possible encryption.  Encryption is done in 16 byte blocks.
+    pad_bytes = 16 - (new_header->bytes % 16);
+    if (pad_bytes == 16)
+        pad_bytes = 0;
+    
+    new_header->bytes += pad_bytes;
     
 	if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
 	{
@@ -1354,7 +1364,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         // populate seizure record body
         mefrec_seiz = calloc(1, sizeof(MEFREC_Seiz_1_0));
         sprintf(mefrec_seiz->annotation, annotation);
-        mefrec_seiz->earliest_onset = unixTimestamp;   // should this be offset?
+        mefrec_seiz->earliest_onset = unixTimestamp;
         mefrec_seiz->latest_offset = unixTimestamp;
         mefrec_seiz->duration = 0;
         mefrec_seiz->number_of_channels = 4;
@@ -1383,6 +1393,12 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         new_header->record_CRC = CRC_update((ui1*)annotation, (size_t)(strlen(annotation) + 1), new_header->record_CRC);
     }
     
+    // account for pad bytes, this code will be the same regardless of record type
+    annotation_state->rdat_file_offset += pad_bytes;
+    max_entry_size += pad_bytes;
+    if (pad_bytes)
+        new_header->record_CRC = CRC_update((ui1*)pad_bytes_string, (size_t)pad_bytes, new_header->record_CRC);
+    
     // we know the CRC for the record header (crc of header and body) so now we can write them.
     (void)e_fwrite(new_header, sizeof(ui1), (size_t)sizeof(RECORD_HEADER), annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
     if (!strcmp(type, "Seiz"))
@@ -1392,6 +1408,11 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     if (!strcmp(type, "Note"))
     {
         (void)e_fwrite(annotation, sizeof(ui1), (size_t)(strlen(annotation) + 1), annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    }
+    // write pad bytes, if necessary
+    if (pad_bytes)
+    {
+        (void)e_fwrite(pad_bytes_string, sizeof(si1), (size_t)pad_bytes, annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
     }
     // write index
     (void)e_fwrite(new_index, sizeof(ui1), (size_t)sizeof(RECORD_INDEX), annotation_state->ridx_fps->fp, annotation_state->ridx_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);

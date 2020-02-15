@@ -33,6 +33,7 @@ int main()
     sf8 sine_frequency;
     sf8 seconds_per_block;
     CHANNEL_STATE *mef_channel_state_struct;
+    ANNOTATION_STATE *annotation_state_struct;
     si4 *samps;
     ui8 *packet_times;
     si8 base_timestamp;
@@ -101,6 +102,31 @@ int main()
     
     // all done, close MEF channel
     close_mef_channel(mef_channel_state_struct);
+    
+    /********************************  RECORDS ***************************************/
+    
+    // The following code is a simple demonstration of writing Note records.
+    //
+    // After the close_annotation() command, create_or_append_annotations() could be called again
+    // and new records could then be appended to the same records files.
+    
+    // allocate struct
+    annotation_state_struct = (ANNOTATION_STATE*) calloc((size_t) 1, sizeof(ANNOTATION_STATE));
+    
+    // create records (annotations) files
+    create_or_append_annotations(annotation_state_struct, dir_name, -6.0, "not_entered");
+
+    // manually write two "Note" type records
+    write_annotation(annotation_state_struct, 946684800000000, "Note", 0, "This is the text of the first note.");
+    write_annotation(annotation_state_struct, 946684801000000, "Note", 0, "This is the text of the second note.");
+
+    // close records files
+    close_annotation(annotation_state_struct);
+    
+    // free allocated data
+    free (annotation_state_struct);
+    
+    /********************************  END OF RECORDS ********************************/
     
     // free allocated data
     free (samps);

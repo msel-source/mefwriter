@@ -634,8 +634,11 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
         uh_data->start_time = rps->block_header->start_time;
         uh_inds->start_time = rps->block_header->start_time;
         
-        // set start time for second segment (subtract because we're dealing with offset times)
-        channel_state->next_segment_start_time = rps->block_header->start_time - (channel_state->num_secs_per_segment * 1e6);
+        // set start time for next segment
+        if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
+            channel_state->next_segment_start_time = rps->block_header->start_time - (channel_state->num_secs_per_segment * 1e6);  // subtract, since times are offset
+        else
+            channel_state->next_segment_start_time = rps->block_header->start_time + (channel_state->num_secs_per_segment * 1e6);
     }
     
     md2 = metadata_fps->metadata.time_series_section_2;

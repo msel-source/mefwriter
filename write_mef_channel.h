@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2018, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -150,6 +150,19 @@ extern "C" {
      ui8 num_secs_per_segment,
      si4 bit_shift_flag
      );
+#endif
+    
+#ifndef _EXPORT_FOR_DLL
+    si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
+                                     si1* dir_name,
+                                     sf4 gmt_offset,
+                                     si1 *anonymized_subject_name);
+    si4 write_annotation(ANNOTATION_STATE* annotation_state,
+                         ui8 unixTimestamp,
+                         si1* type,
+                         si4 code,
+                         si1* annotation);
+    si4 close_annotation(ANNOTATION_STATE* annotation_state);
 #endif
     
     

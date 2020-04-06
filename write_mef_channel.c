@@ -362,6 +362,28 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     extract_path_parts(mef3_session_directory, mef3_session_path, mef3_session_name, extension);
     MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
     
+    // check for password differences
+    if (mef_3_level_1_password != NULL && mef_3_level_2_password != NULL)
+    {
+        if (!strcmp(mef_3_level_1_password, mef_3_level_2_password))
+        {
+            // While it is not technically a violation of the MEF 3.0 spec to have the level 1 and level 2
+            // passwords be the same, the intention is that having different passwords provide different
+            // levels of access to different users.
+            //
+            // (Note: the validation of the level 2 password is dependent upon the plain-text of the level
+            // 1 password, and thus if level 2 passwords are in use, then the user decoding the file needs
+            // to only type in the level 2 password, to provide access to both level 1 and level 2.)
+            //
+            // If this check (that the two passwords should be different) is removed, then it should be
+            // verified that that viewers and decoding tools can correctly give level 2 access, and not
+            // just level 1 access, when level 2 access is desired.  This may not be implemented correctly
+            // in all decoding tools.
+            fprintf(stderr, "Level 1 and level 2 password should be different.  Exiting...\n");
+            exit(0);
+        }
+    }
+    
     //fprintf(stdout, "path: %s\n", mef3_session_path);
     // make mef3 session directory
     sprintf(command, "mkdir \"%s\" 2> /dev/null", mef3_session_path);

@@ -77,6 +77,7 @@ int main()
                                 "",           // institution
                                 NULL,                  // level 1 password (technical data)
                                 NULL,                  // level 2 password (subject data), must also specify level 1 password if specifying level 2
+                                                       // level 1 and level 2 passwords should be different, if both are specified.
                                 "not entered",        // study comments
                                 "not entered",         // channel comments
                                 0                      // secs per segment, 0 means no limit to segment size

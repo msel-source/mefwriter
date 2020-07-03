@@ -160,8 +160,7 @@ extern "C" {
     si4 write_annotation(ANNOTATION_STATE* annotation_state,
                          ui8 unixTimestamp,
                          si1* type,
-                         si4 code,
-                         si1* annotation);
+                         void* record);
     si4 close_annotation(ANNOTATION_STATE* annotation_state);
 #endif
     

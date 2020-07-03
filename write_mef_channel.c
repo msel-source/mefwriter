@@ -1490,7 +1490,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         (void)e_fwrite(mefrec_epoc, sizeof(ui1), (size_t)MEFREC_Epoc_1_0_BYTES, annotation_state->rdat_fps->fp, annotation_state->rdat_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
         annotation_state->rdat_fps->universal_header->body_CRC = CRC_update((ui1*)mefrec_epoc, (size_t)MEFREC_Epoc_1_0_BYTES, annotation_state->rdat_fps->universal_header->body_CRC);
     }
-    printf("Pad byets %d\n", pad_bytes);
+
     // write pad bytes, if necessary
     if (pad_bytes)
     {

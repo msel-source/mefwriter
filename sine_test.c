@@ -38,6 +38,9 @@ int main()
     ui8 *packet_times;
     si8 base_timestamp;
     char dir_name[128];
+    MEFREC_Curs_1_0 *cursor_pointer;
+    MEFREC_Epoc_1_0 *epoch_pointer;
+    FILE_PROCESSING_STRUCT *records_fps;
     
     // initialize MEF3 library
     (void) initialize_meflib();
@@ -118,14 +121,39 @@ int main()
     create_or_append_annotations(annotation_state_struct, dir_name, -6.0, "not_entered");
 
     // manually write two "Note" type records
-    write_annotation(annotation_state_struct, 946684800000000, "Note", 0, "This is the text of the first note.");
-    write_annotation(annotation_state_struct, 946684801000000, "Note", 0, "This is the text of the second note.");
+    write_annotation(annotation_state_struct, 946684800000000, "Note", "This is the text of the first note.");
+    write_annotation(annotation_state_struct, 946684801000000, "Note", "This is the text of the second note.");
+    
+    // create a cursor record and write it to file.
+    cursor_pointer = (MEFREC_Curs_1_0*) calloc((size_t) 1, sizeof(MEFREC_Curs_1_0));
+    cursor_pointer->id_number = 1;
+    cursor_pointer->timestamp = 946684802000000;
+    cursor_pointer->latency = 2000000;
+    cursor_pointer->value = 10;
+    sprintf(cursor_pointer->name, "My cursor");
+    write_annotation(annotation_state_struct, 946684802000000, "Curs", cursor_pointer);
+    
+    // create an epoch record and write it to file.
+    epoch_pointer = (MEFREC_Epoc_1_0*) calloc((size_t) 1, sizeof(MEFREC_Epoc_1_0));
+    epoch_pointer->id_number = 1;
+    epoch_pointer->timestamp = 946684803000000;
+    epoch_pointer->end_timestamp = 946684804000000;
+    epoch_pointer->duration = epoch_pointer->end_timestamp - epoch_pointer->timestamp;
+    sprintf(epoch_pointer->type, "Generic");
+    sprintf(epoch_pointer->text, "My example epoch");
+    write_annotation(annotation_state_struct, 946684803000000, "Epoc", epoch_pointer);
 
     // close records files
     close_annotation(annotation_state_struct);
     
     // free allocated data
     free (annotation_state_struct);
+    free (cursor_pointer);
+    free (epoch_pointer);
+    
+    // Test reading the annotations we just wrote, by reading them and displaying them
+    records_fps = read_MEF_file(NULL, "sine_test.mefd/sine_test.rdat", NULL, NULL, NULL, USE_GLOBAL_BEHAVIOR);
+    show_records(records_fps);
     
     /********************************  END OF RECORDS ********************************/
     

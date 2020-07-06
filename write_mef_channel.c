@@ -1317,11 +1317,14 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     MEFREC_Curs_1_0* mefrec_curs;
     MEFREC_Epoc_1_0* mefrec_epoc;
     
+    int allocated_new_struct;
     
     RECORD_HEADER *new_header;
     RECORD_INDEX *new_index;
     si4 pad_bytes;
     static const si1 pad_bytes_string[] = "~~~~~~~~~~~~~~~";  // 15 tildes, so we can fwrite between 0 and 15 of them to pad a record
+    
+    allocated_new_struct = 0;
     
     if (!strcmp(type, "Siez") && !strcmp(type, "Note") && !strcmp(type, "Curs") && !strcmp(type, "Epoc"))
         return 0;
@@ -1432,7 +1435,29 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     }
     if (!strcmp(type, "Curs"))
     {
-        mefrec_curs = (MEFREC_Curs_1_0*) record;
+        MEFREC_Curs_1_0 *curs_temp;
+        
+        // create a new struct - this way we can guarantee the string is (name) is zero'd out and excess random
+        // characters aren'te written after the string terminator
+        curs_temp = (MEFREC_Curs_1_0*) record;
+        mefrec_curs = (MEFREC_Curs_1_0*) calloc(1,(size_t)MEFREC_Curs_1_0_BYTES);
+        allocated_new_struct = 1;
+        
+        if (mefrec_curs != NULL)
+        {
+            // copy from old struct to new struct
+            mefrec_curs->id_number = curs_temp->id_number;
+            mefrec_curs->timestamp = curs_temp->timestamp;
+            mefrec_curs->latency = curs_temp->latency;
+            mefrec_curs->value = curs_temp->value;
+            strncpy(mefrec_curs->name, curs_temp->name, MEFREC_Curs_1_0_NAME_BYTES - 1);
+        }
+        else
+        {
+            // allocation failed, so revert to use what was passed in
+            mefrec_curs = (MEFREC_Curs_1_0*) record;
+            allocated_new_struct = 0;
+        }
         
         // keep track of where we are in rdat for next ridx entry
         annotation_state->rdat_file_offset += MEFREC_Curs_1_0_BYTES;
@@ -1446,7 +1471,30 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     }
     if (!strcmp(type, "Epoc"))
     {
-        mefrec_epoc = (MEFREC_Epoc_1_0*) record;
+        MEFREC_Epoc_1_0 *epoc_temp;
+        
+        // create a new struct - this way we can guarantee the string is (name) is zero'd out and excess random
+        // characters aren'te written after the string terminator
+        epoc_temp = (MEFREC_Epoc_1_0*) record;
+        mefrec_epoc = (MEFREC_Epoc_1_0*) calloc(1,(size_t)MEFREC_Epoc_1_0_BYTES);
+        allocated_new_struct = 1;
+        
+        if (mefrec_epoc != NULL)
+        {
+            // copy from old struct to new struct
+            mefrec_epoc->id_number = epoc_temp->id_number;
+            mefrec_epoc->timestamp = epoc_temp->timestamp;
+            mefrec_epoc->end_timestamp = epoc_temp->end_timestamp;
+            mefrec_epoc->duration = epoc_temp->duration;
+            strncpy(mefrec_epoc->type, epoc_temp->type, MEFREC_Epoc_1_0_TYPE_BYTES - 1);
+            strncpy(mefrec_epoc->text, epoc_temp->text, MEFREC_Epoc_1_0_TEXT_BYTES - 1);
+        }
+        else
+        {
+            // allocation failed, so revert to use what was passed in
+            mefrec_epoc = (MEFREC_Epoc_1_0*) record;
+            allocated_new_struct = 0;
+        }
         
         // keep track of where we are in rdat for next ridx entry
         annotation_state->rdat_file_offset += MEFREC_Epoc_1_0_BYTES;
@@ -1570,6 +1618,16 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     // free memory
     free(new_header);
     free(new_index);
+    if (allocated_new_struct) {
+        if (!strcmp(type, "Curs")) {
+            if (mefrec_curs != NULL)
+                free (mefrec_curs);
+        }
+        if (!strcmp(type, "Epoc")) {
+            if (mefrec_epoc != NULL)
+                free (mefrec_epoc);
+        }
+    }
     
     return 0;
 }

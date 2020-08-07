@@ -1447,7 +1447,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
         {
             // copy from old struct to new struct
             mefrec_curs->id_number = curs_temp->id_number;
-            mefrec_curs->timestamp = curs_temp->timestamp;
+            mefrec_curs->trace_timestamp = curs_temp->trace_timestamp;
             mefrec_curs->latency = curs_temp->latency;
             mefrec_curs->value = curs_temp->value;
             strncpy(mefrec_curs->name, curs_temp->name, MEFREC_Curs_1_0_NAME_BYTES - 1);

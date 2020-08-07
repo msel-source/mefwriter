@@ -127,7 +127,7 @@ int main()
     // create a cursor record and write it to file.
     cursor_pointer = (MEFREC_Curs_1_0*) calloc((size_t) 1, sizeof(MEFREC_Curs_1_0));
     cursor_pointer->id_number = 1;
-    cursor_pointer->timestamp = 946684802000000;
+    cursor_pointer->trace_timestamp = 946684800000000;
     cursor_pointer->latency = 2000000;
     cursor_pointer->value = 10;
     sprintf(cursor_pointer->name, "My cursor");

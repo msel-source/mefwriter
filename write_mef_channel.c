@@ -387,7 +387,11 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     
     //fprintf(stdout, "path: %s\n", mef3_session_path);
     // make mef3 session directory
+#ifndef _WIN32
     sprintf(command, "mkdir \"%s\" 2> /dev/null", mef3_session_path);
+#else
+    sprintf(command, "mkdir \"%s\" > nul 2> nul", mef3_session_path);
+#endif
     system(command);
     
     // set up a generic fps for universal header and password data
@@ -413,7 +417,11 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     
     // make mef3 channel directory
     sprintf(channel_path, "%s/%s.%s", mef3_session_path, chan_map_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
+#ifndef _WIN32
     sprintf(command, "mkdir %s", channel_path);
+#else
+    sprintf(command, "mkdir \"%s\" > nul 2> nul", channel_path);
+#endif
     system(command);
     
     // copy channel name into generic universal header
@@ -428,7 +436,11 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     //fprintf(stdout, "segment path: %s\n", segment_path);
     // make mef3 segment directory
     sprintf(segment_path, "%s/%s.%s", channel_path, segment_name, SEGMENT_DIRECTORY_TYPE_STRING);
+#ifndef _WIN32
     sprintf(command, "mkdir %s", segment_path);
+#else
+    sprintf(command, "mkdir \"%s\" > nul 2> nul", segment_path);
+#endif
     system(command);
     
     // generate level UUID into generic universal_header

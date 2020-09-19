@@ -1285,9 +1285,11 @@ si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
         annotation_state->ridx_fps->directives.open_mode = FPS_W_OPEN_MODE;
         annotation_state->rdat_fps->universal_header->number_of_entries = 0;
         generate_UUID(annotation_state->rdat_fps->universal_header->file_UUID);
+        annotation_state->rdat_fps->universal_header->body_CRC = CRC_START_VALUE;
         write_MEF_file(annotation_state->rdat_fps);
         annotation_state->ridx_fps->universal_header->number_of_entries = 0;
         generate_UUID(annotation_state->ridx_fps->universal_header->file_UUID);
+        annotation_state->ridx_fps->universal_header->body_CRC = CRC_START_VALUE;
         write_MEF_file(annotation_state->ridx_fps);
         
         annotation_state->rdat_file_offset = UNIVERSAL_HEADER_BYTES;
@@ -1325,6 +1327,12 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     static const si1 pad_bytes_string[] = "~~~~~~~~~~~~~~~";  // 15 tildes, so we can fwrite between 0 and 15 of them to pad a record
     
     allocated_new_struct = 0;
+
+    // initialize these, so Visual Studio doesn't complain
+    note_text = NULL;
+    mefrec_seiz = NULL;
+    mefrec_curs = NULL;
+    mefrec_epoc = NULL;
     
     if (!strcmp(type, "Siez") && !strcmp(type, "Note") && !strcmp(type, "Curs") && !strcmp(type, "Epoc"))
         return 0;

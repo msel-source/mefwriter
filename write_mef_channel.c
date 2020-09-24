@@ -1269,8 +1269,16 @@ si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
         annotation_state->rdat_file_offset = (unsigned long) ftell(annotation_state->rdat_fps->fp);
         annotation_state->ridx_file_offset = (unsigned long) ftell(annotation_state->ridx_fps->fp);
         
-        fclose(annotation_state->rdat_fps->fp);
-        fclose(annotation_state->ridx_fps->fp);
+        if (annotation_state->rdat_fps->fp != NULL)
+        {
+            fclose(annotation_state->rdat_fps->fp);
+            annotation_state->rdat_fps->fp = NULL;
+        }
+        if (annotation_state->ridx_fps->fp != NULL)
+        {
+            fclose(annotation_state->ridx_fps->fp);
+            annotation_state->ridx_fps->fp = NULL;
+        }
     }
     else
     {
@@ -1307,8 +1315,16 @@ si4 create_or_append_annotations(ANNOTATION_STATE* annotation_state,
         annotation_state->rdat_file_offset = UNIVERSAL_HEADER_BYTES;
         annotation_state->ridx_file_offset = UNIVERSAL_HEADER_BYTES;
         
-        fclose(annotation_state->rdat_fps->fp);
-        fclose(annotation_state->ridx_fps->fp);
+        if (annotation_state->rdat_fps->fp != NULL)
+        {
+            fclose(annotation_state->rdat_fps->fp);
+            annotation_state->rdat_fps->fp = NULL;
+        }
+        if (annotation_state->ridx_fps->fp != NULL)
+        {
+            fclose(annotation_state->ridx_fps->fp);
+            annotation_state->ridx_fps->fp = NULL;
+        }
     }
     
     return 0;
@@ -1358,9 +1374,11 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     if (annotation_state->ridx_fps == NULL)
         return 0;
     
-    annotation_state->rdat_fps->fp = fopen(annotation_state->rdat_fps->full_file_name, "r+b");
+    if (annotation_state->rdat_fps->fp == NULL)
+        annotation_state->rdat_fps->fp = fopen(annotation_state->rdat_fps->full_file_name, "r+b");
     fseek(annotation_state->rdat_fps->fp, annotation_state->rdat_file_offset, SEEK_SET);
-    annotation_state->ridx_fps->fp = fopen(annotation_state->ridx_fps->full_file_name, "r+b");
+    if (annotation_state->ridx_fps->fp == NULL)
+        annotation_state->ridx_fps->fp = fopen(annotation_state->ridx_fps->full_file_name, "r+b");
     fseek(annotation_state->ridx_fps->fp, annotation_state->ridx_file_offset, SEEK_SET);
     
     new_header = calloc(1, sizeof(RECORD_HEADER));
@@ -1394,7 +1412,6 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
     {
         new_header->bytes = MEFREC_Epoc_1_0_BYTES;
     }
-    
     
     // calculate pad bytes for possible encryption.  Encryption is done in 16 byte blocks.
     pad_bytes = 16 - (new_header->bytes % 16);
@@ -1662,9 +1679,15 @@ si4 close_annotation(ANNOTATION_STATE* annotation_state)
     
     // close files
     if (annotation_state->rdat_fps->fp != NULL)
+    {
         fclose(annotation_state->rdat_fps->fp);
+        annotation_state->rdat_fps->fp = NULL;
+    }
     if (annotation_state->ridx_fps->fp != NULL)
+    {
         fclose(annotation_state->ridx_fps->fp);
+        annotation_state->ridx_fps->fp = NULL;
+    }
     
     return 0;
 }

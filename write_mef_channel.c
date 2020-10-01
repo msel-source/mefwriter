@@ -1807,7 +1807,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     md2->frame_rate = frame_rate;
     md2->horizontal_resolution = width;
     md2->vertical_resolution = height;
-    md2->maximum_clip_bytes = file_size - AVI_HEADER_SIZE;  // 32 byte AVI/RIFF header, then 56 byte Main AVI header for details.  LIST object in avi file starts at byte 88.
+    md2->maximum_clip_bytes = file_size;  // TBD: make this more precise
     md2->number_of_clips = 1;
     md2->recording_duration = end_time - start_time;
     md2->video_file_CRC = crc;
@@ -1823,7 +1823,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     generate_UUID(inds_fps->universal_header->file_UUID);
     MEF_snprintf(inds_fps->full_file_name, MEF_FULL_FILE_NAME_BYTES, "%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s", output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, VIDEO_INDICES_FILE_TYPE_STRING);
     inds_fps->universal_header->number_of_entries = 1;  // because we have just one clip
-    inds_fps->universal_header->maximum_entry_size = file_size - 88;
+    inds_fps->universal_header->maximum_entry_size = file_size;  // TBD: make this more precise
     inds_fps->directives.io_bytes = UNIVERSAL_HEADER_BYTES;  // write out the universal header, then index blocks piecemeal
     inds_fps->directives.close_file = MEF_FALSE;
     write_MEF_file(inds_fps);
@@ -1834,8 +1834,8 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     index_block.end_time = end_time;
     index_block.start_frame = 0;
     index_block.end_frame = num_frames - 1;
-    index_block.file_offset = AVI_HEADER_SIZE;  // 32 byte AVI/RIFF header, then 56 byte header for details.  LIST object in avi file starts at byte 88.
-    index_block.clip_bytes = file_size - AVI_HEADER_SIZE;  // see above comment
+    index_block.file_offset = -1; // not filled in, video file type dependent.  TBD: this can be filled in if the video format is known.
+    index_block.clip_bytes = -1; // not filled in, video file type dependent.  TBD: this can be filled in if the video format is known.
     memset(index_block.protected_region, 0, VIDEO_INDEX_PROTECTED_REGION_BYTES);
     memset(index_block.discretionary_region, 0, VIDEO_INDEX_DISCRETIONARY_REGION_BYTES);
     (void)e_fwrite(&index_block, sizeof(ui1), (size_t)(VIDEO_INDEX_BYTES), inds_fps->fp, inds_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);

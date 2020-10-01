@@ -25,6 +25,7 @@
  Updated 5/2016 for MEF 3.0 library updates and bug fixes.
  Updated 2/2017 to add support for exporting functions to .dll
  Updated 10/2017 initial support for MEF 3.0 annotations.
+ Updated 10/2020 initial support for MEF 3.0 video channels.
  
  When compiling for Windows .dll, define _EXPORT_FOR_DLL
  
@@ -1690,4 +1691,156 @@ si4 close_annotation(ANNOTATION_STATE* annotation_state)
     }
     
     return 0;
+}
+
+// See comment in .h file for use instructions.
+void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si1* file_name, si8 start_time, si8 end_time, 
+    si4 width, si4 height, si4 num_frames, sf8 frame_rate, si1* extension, FILE_PROCESSING_STRUCT* proto_metadata_fps)
+{
+    si1 command[1024];
+    FILE_PROCESSING_STRUCT* metadata_fps;
+    FILE_PROCESSING_STRUCT* inds_fps;
+    VIDEO_INDEX index_block;
+    VIDEO_METADATA_SECTION_2* md2;
+    ui4 crc;
+    FILE* fp;
+    si8 i;
+    si4 bytes_to_read;
+    si4* buffer;
+    si4 fd;
+#ifdef _WIN32
+    struct _stat64 sb64;
+#else
+    struct stat sb;
+#endif
+    si8 file_size;
+    si1* mef3_session_name;
+    si1* c_ptr;
+    si1* last;
+
+    if (proto_metadata_fps == NULL)
+    {
+        fprintf(stderr, "Problem - a video channel is being created without an EEG channel having first been created!  Exiting!");
+        exit(1);
+    }
+
+    //extract_path_parts(full_file_name, mef3_session_path, mef3_session_name, parsed_extension);
+    if (!(strcmp(extension, "AVI") || strcmp(extension, "avi") || strcmp(extension, "Avi")))
+    {
+        fprintf(stderr, "Problem - Video file detected that is not an AVI file!  Code needs to be updated to handle this new type (%s).  Exiting!", extension);
+        exit(1);
+    }
+
+    // create new segment directory
+    sprintf(command, "mkdir \"%s.mefd/%s.vidd/%s-%06d.segd\"", output_directory, chan_name, chan_name, segment_num);
+    system(command);
+
+    // copy video file into new directory, renaming the file as we do so (but keeping the same file extension)
+#ifdef _WIN32
+    sprintf(command, "copy \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
+    // use only backslashes here, because the "copy" command in Windows 10 is very picky about it.  TBD: check on other Windows versions
+    slash_to_backslash(&command);
+#else
+    sprintf(command, "cp \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
+#endif
+    system(command);
+
+    // open file to get file size, and to get crc of video file (reading file a million bytes at a time)
+    fp = fopen(full_file_name, "rb");
+    // get file size, which will be used a lot
+#ifdef _WIN32
+    fd = _fileno(fp);
+    _fstat64(fd, &sb64);  // 64-bit necessary for file sizes greater than 4 GB
+    file_size = sb64.st_size;
+#else
+    fd = fileno(fp);
+    fstat(fd, &sb);
+    file_size = sb.st_size;
+#endif
+
+    // do crc calculation
+    buffer = malloc(VIDEO_FILE_READ_SIZE);
+    crc = CRC_START_VALUE;
+    i = 0;
+    while (i < file_size)
+    {
+        if ((i + (si8)VIDEO_FILE_READ_SIZE) >= file_size)
+            bytes_to_read = file_size - i;
+        else
+            bytes_to_read = VIDEO_FILE_READ_SIZE;
+        fread(buffer, 1, bytes_to_read, fp);
+        crc = CRC_update(buffer, bytes_to_read, crc);
+        i = i + VIDEO_FILE_READ_SIZE;
+    }
+    fclose(fp);
+    free(buffer);
+
+    // create video metadata file (.vmet) and vido indices file (.vidx)
+    // .vmet file
+    metadata_fps = allocate_file_processing_struct(METADATA_FILE_BYTES, VIDEO_METADATA_FILE_TYPE_CODE, NULL, NULL, UNIVERSAL_HEADER_BYTES);
+    initialize_metadata(metadata_fps);
+    // generate level UUID into universal_header
+    generate_UUID(metadata_fps->universal_header->level_UUID);
+    generate_UUID(metadata_fps->universal_header->file_UUID);
+
+    // encryption is OFF in this use-case
+    metadata_fps->metadata.section_1->section_2_encryption = NO_ENCRYPTION;
+    metadata_fps->metadata.section_1->section_3_encryption = NO_ENCRYPTION;
+    // copy section 3 (patient info) from EEG channel, as this information is the same
+    memcpy(metadata_fps->raw_data + METADATA_SECTION_3_OFFSET, proto_metadata_fps->raw_data + METADATA_SECTION_3_OFFSET, METADATA_SECTION_3_BYTES);
+    MEF_snprintf(metadata_fps->full_file_name, MEF_FULL_FILE_NAME_BYTES, "%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s", output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, VIDEO_METADATA_FILE_TYPE_STRING);
+    metadata_fps->universal_header->start_time = start_time;
+    metadata_fps->universal_header->end_time = end_time;
+    metadata_fps->universal_header->number_of_entries = 1;  // always for metadata
+    metadata_fps->universal_header->maximum_entry_size = METADATA_FILE_BYTES;
+    metadata_fps->universal_header->segment_number = segment_num;
+    MEF_strncpy(metadata_fps->universal_header->channel_name, chan_name, MEF_BASE_FILE_NAME_BYTES);
+    // copy session_name and anonymized_name from proto_fps
+    memcpy(metadata_fps->universal_header->session_name, proto_metadata_fps->universal_header->session_name, MEF_BASE_FILE_NAME_BYTES);
+    memcpy(metadata_fps->universal_header->anonymized_name, proto_metadata_fps->universal_header->anonymized_name, UNIVERSAL_HEADER_ANONYMIZED_NAME_BYTES);
+    md2 = metadata_fps->metadata.video_section_2;
+    memset(md2->channel_description, 0, METADATA_CHANNEL_DESCRIPTION_BYTES);
+    memset(md2->protected_region, 0, VIDEO_METADATA_SECTION_2_PROTECTED_REGION_BYTES);
+    memset(md2->discretionary_region, 0, VIDEO_METADATA_SECTION_2_DISCRETIONARY_REGION_BYTES);
+    memset(md2->session_description, 0, METADATA_SESSION_DESCRIPTION_BYTES);
+    md2->frame_rate = frame_rate;
+    md2->horizontal_resolution = width;
+    md2->vertical_resolution = height;
+    md2->maximum_clip_bytes = file_size - AVI_HEADER_SIZE;  // 32 byte AVI/RIFF header, then 56 byte Main AVI header for details.  LIST object in avi file starts at byte 88.
+    md2->number_of_clips = 1;
+    md2->recording_duration = end_time - start_time;
+    md2->video_file_CRC = crc;
+    memset(md2->video_format, 0, VIDEO_METADATA_VIDEO_FORMAT_BYTES);
+    sprintf(md2->video_format, "AVI");
+    write_MEF_file(metadata_fps);
+
+    // .vidx file
+    // write header first
+    inds_fps = allocate_file_processing_struct(UNIVERSAL_HEADER_BYTES, VIDEO_INDICES_FILE_TYPE_CODE, NULL, metadata_fps, UNIVERSAL_HEADER_BYTES);
+    // use same level UUID as video metadata
+    memcpy(inds_fps->universal_header->level_UUID, metadata_fps->universal_header->level_UUID, 16);
+    generate_UUID(inds_fps->universal_header->file_UUID);
+    MEF_snprintf(inds_fps->full_file_name, MEF_FULL_FILE_NAME_BYTES, "%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s", output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, VIDEO_INDICES_FILE_TYPE_STRING);
+    inds_fps->universal_header->number_of_entries = 1;  // because we have just one clip
+    inds_fps->universal_header->maximum_entry_size = file_size - 88;
+    inds_fps->directives.io_bytes = UNIVERSAL_HEADER_BYTES;  // write out the universal header, then index blocks piecemeal
+    inds_fps->directives.close_file = MEF_FALSE;
+    write_MEF_file(inds_fps);
+    inds_fps->universal_header->body_CRC = CRC_START_VALUE;
+    // then write block
+    // just one block, as we are assuming there is one "clip" per avi file, for this use-case.
+    index_block.start_time = start_time;
+    index_block.end_time = end_time;
+    index_block.start_frame = 0;
+    index_block.end_frame = num_frames - 1;
+    index_block.file_offset = AVI_HEADER_SIZE;  // 32 byte AVI/RIFF header, then 56 byte header for details.  LIST object in avi file starts at byte 88.
+    index_block.clip_bytes = file_size - AVI_HEADER_SIZE;  // see above comment
+    memset(index_block.protected_region, 0, VIDEO_INDEX_PROTECTED_REGION_BYTES);
+    memset(index_block.discretionary_region, 0, VIDEO_INDEX_DISCRETIONARY_REGION_BYTES);
+    (void)e_fwrite(&index_block, sizeof(ui1), (size_t)(VIDEO_INDEX_BYTES), inds_fps->fp, inds_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    inds_fps->universal_header->body_CRC = CRC_update(&index_block, VIDEO_INDEX_BYTES, inds_fps->universal_header->body_CRC);
+    // rewrite header with new body CRC
+    e_fseek(inds_fps->fp, 0, SEEK_SET, inds_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    (void)e_fwrite(inds_fps->universal_header, sizeof(UNIVERSAL_HEADER), (size_t)1, inds_fps->fp, inds_fps->full_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    fclose(inds_fps->fp);
 }

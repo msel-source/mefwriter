@@ -166,11 +166,12 @@ extern "C" {
 #endif
 
     // The following function can be used for the use-case where a series of video files should be placed within a MEF 3.0 video channel (.vidd) directory.
-    // For now it only works for .avi files, and assumes there is a 88-byte header within the file before the first LIST object (frame).  The user is
-    // responsible for pulling out information like resolution width/height, number of frame, and frame rate.  (The ffprobe open-source tool is very good).
-    // The proto_metadata_fps is used for filling in section 3 of the metadata (info such as patient name/id and recording location) which will be the same
-    // as with time series data channels.  The start_time and end_time are the uUTC of the beginning and end of this avi file.  This use-case assumes exactly
-    // one clip (subsection of a video file) is defined for thi entire video file.  Modification of this function would be necessary for multiple clips.
+    // For now it only works for .avi files.  Clip byte/offset information is not filled in, and the maximum clip bytes is set to the size of the .avi file.
+    // The user is responsible for pulling out information like resolution width/height, number of frame, and frame rate.  (The ffprobe open-source tool is 
+    // very good).  The proto_metadata_fps is used for filling in section 3 of the metadata (info such as patient name/id and recording location) which will 
+    // be the same as with time series data channels.  The start_time and end_time are the uUTC of the beginning and end of this avi file.  This use-case 
+    // assumes exactly one clip (subsection of a video file) is defined for the entire video file.  Modification of this function would be necessary for 
+    // multiple clips.  The video channel is not encrypted in this use-case.
     void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si1* file_name, si8 start_time, si8 end_time, 
         si4 width, si4 height, si4 num_frames, sf8 frame_rate, si1* extension, FILE_PROCESSING_STRUCT* proto_metadata_fps);
 
@@ -180,7 +181,6 @@ extern "C" {
 #define DISCONTINUITY_TIME_THRESHOLD 100000   // 100000 microseconds = .1 seconds
 
 #define VIDEO_FILE_READ_SIZE   1000000 // 1 million bytes - this is for reading video files, to do a CRC calculation.
-#define AVI_HEADER_SIZE     88  // Number of bytes in a AVI header (bytes before first LIST object, or frame).  TBD: check: is this always true?
     
     
 #ifdef __cplusplus

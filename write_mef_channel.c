@@ -1,4 +1,4 @@
-/**********************************************************************************************************************
+//**********************************************************************************************************************
  
  Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
  
@@ -1779,6 +1779,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     // .vmet file
     metadata_fps = allocate_file_processing_struct(METADATA_FILE_BYTES, VIDEO_METADATA_FILE_TYPE_CODE, NULL, NULL, UNIVERSAL_HEADER_BYTES);
     initialize_metadata(metadata_fps);
+    metadata_fps->directives.close_file = MEF_TRUE;
     // generate level UUID into universal_header
     generate_UUID(metadata_fps->universal_header->level_UUID);
     generate_UUID(metadata_fps->universal_header->file_UUID);

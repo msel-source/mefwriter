@@ -1694,8 +1694,8 @@ si4 close_annotation(ANNOTATION_STATE* annotation_state)
 }
 
 // See comment in .h file for use instructions.
-void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si1* file_name, si8 start_time, si8 end_time, 
-    si4 width, si4 height, si4 num_frames, sf8 frame_rate, si1* extension, FILE_PROCESSING_STRUCT* proto_metadata_fps)
+void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si8 start_time, si8 end_time, 
+    si4 width, si4 height, si4 num_frames, sf8 frame_rate, FILE_PROCESSING_STRUCT* proto_metadata_fps)
 {
     si1 command[1024];
     FILE_PROCESSING_STRUCT* metadata_fps;
@@ -1714,9 +1714,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     struct stat sb;
 #endif
     si8 file_size;
-    si1* mef3_session_name;
-    si1* c_ptr;
-    si1* last;
+    si1 extension[128];
 
     if (proto_metadata_fps == NULL)
     {
@@ -1724,8 +1722,8 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
         exit(1);
     }
 
-    //extract_path_parts(full_file_name, mef3_session_path, mef3_session_name, parsed_extension);
-    if (!(strcmp(extension, "AVI") || strcmp(extension, "avi") || strcmp(extension, "Avi")))
+    extract_path_parts(full_file_name, NULL, NULL, extension);
+    if (!(!strcmp(extension, "AVI") || !strcmp(extension, "avi") || !strcmp(extension, "Avi")))
     {
         fprintf(stderr, "Problem - Video file detected that is not an AVI file!  Code needs to be updated to handle this new type (%s).  Exiting!", extension);
         exit(1);
@@ -1737,11 +1735,11 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
 
     // copy video file into new directory, renaming the file as we do so (but keeping the same file extension)
 #ifdef _WIN32
-    sprintf(command, "copy \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
+    sprintf(command, "copy \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
     // use only backslashes here, because the "copy" command in Windows 10 is very picky about it.  TBD: check on other Windows versions
     slash_to_backslash(&command);
 #else
-    sprintf(command, "cp \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
+    sprintf(command, "cp \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
 #endif
     system(command);
 
@@ -1812,7 +1810,13 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     md2->recording_duration = end_time - start_time;
     md2->video_file_CRC = crc;
     memset(md2->video_format, 0, VIDEO_METADATA_VIDEO_FORMAT_BYTES);
-    sprintf(md2->video_format, "AVI");
+    if (!strcmp(extension, "AVI") || !strcmp(extension, "avi") || !strcmp(extension, "Avi"))
+        sprintf(md2->video_format, "AVI");
+    else
+    {
+        fprintf(stderr, "Problem - Video file detected that is not an AVI file!  Code needs to be updated to handle this new type (%s).  Exiting!", extension);
+        exit(1);
+    }
     write_MEF_file(metadata_fps);
 
     // .vidx file
@@ -1823,7 +1827,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     generate_UUID(inds_fps->universal_header->file_UUID);
     MEF_snprintf(inds_fps->full_file_name, MEF_FULL_FILE_NAME_BYTES, "%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s", output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, VIDEO_INDICES_FILE_TYPE_STRING);
     inds_fps->universal_header->number_of_entries = 1;  // because we have just one clip
-    inds_fps->universal_header->maximum_entry_size = file_size;  // TBD: make this more precise
+    inds_fps->universal_header->maximum_entry_size = file_size;    // TBD: make this more precise
     inds_fps->directives.io_bytes = UNIVERSAL_HEADER_BYTES;  // write out the universal header, then index blocks piecemeal
     inds_fps->directives.close_file = MEF_FALSE;
     write_MEF_file(inds_fps);

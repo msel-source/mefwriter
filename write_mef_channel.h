@@ -172,8 +172,8 @@ extern "C" {
     // be the same as with time series data channels.  The start_time and end_time are the uUTC of the beginning and end of this avi file.  This use-case 
     // assumes exactly one clip (subsection of a video file) is defined for the entire video file.  Modification of this function would be necessary for 
     // multiple clips.  The video channel is not encrypted in this use-case.
-    void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si1* file_name, si8 start_time, si8 end_time, 
-        si4 width, si4 height, si4 num_frames, sf8 frame_rate, si1* extension, FILE_PROCESSING_STRUCT* proto_metadata_fps);
+    void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1* chan_name, si1* full_file_name, si8 start_time, si8 end_time, 
+        si4 width, si4 height, si4 num_frames, sf8 frame_rate, FILE_PROCESSING_STRUCT* proto_metadata_fps);
 
     
     

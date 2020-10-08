@@ -38,6 +38,7 @@ int main()
     ui8 *packet_times;
     si8 base_timestamp;
     char dir_name[128];
+    char temp_name[MEF_FULL_FILE_NAME_BYTES];
     MEFREC_Curs_1_0 *cursor_pointer;
     MEFREC_Epoc_1_0 *epoch_pointer;
     FILE_PROCESSING_STRUCT *records_fps;
@@ -156,7 +157,8 @@ int main()
     free (epoch_pointer);
     
     // Test reading the annotations we just wrote, by reading them and displaying them
-    records_fps = read_MEF_file(NULL, "c:/sine_test.mefd/sine_test.rdat", NULL, NULL, NULL, USE_GLOBAL_BEHAVIOR);
+    sprintf(temp_name, "%s.mefd/sine_test.rdat", dir_name);
+    records_fps = read_MEF_file(NULL, temp_name, NULL, NULL, NULL, USE_GLOBAL_BEHAVIOR);
     if (records_fps->fp == NULL) {
         records_fps->fp = fopen(records_fps->full_file_name, "rb");
 #ifndef _WIN32

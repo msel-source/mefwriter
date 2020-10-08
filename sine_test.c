@@ -49,7 +49,11 @@ int main()
     // initialize variables
     sampling_frequency = 1000.0;   // Hz
     seconds_per_block = 1.0;
+#ifdef _WIN32
+    sprintf(dir_name, "c:\\sine_test");
+#else
     sprintf(dir_name, "sine_test");
+#endif
     
     // allocate buffers
     samps = (si4*) calloc((size_t) 10000, sizeof(si4));
@@ -152,7 +156,15 @@ int main()
     free (epoch_pointer);
     
     // Test reading the annotations we just wrote, by reading them and displaying them
-    records_fps = read_MEF_file(NULL, "sine_test.mefd/sine_test.rdat", NULL, NULL, NULL, USE_GLOBAL_BEHAVIOR);
+    records_fps = read_MEF_file(NULL, "c:/sine_test.mefd/sine_test.rdat", NULL, NULL, NULL, USE_GLOBAL_BEHAVIOR);
+    if (records_fps->fp == NULL) {
+        records_fps->fp = fopen(records_fps->full_file_name, "rb");
+#ifndef _WIN32
+        records_fps->fd = fileno(records_fps->fp);
+#else
+        records_fps->fd = _fileno(records_fps->fp);
+#endif
+    }
     show_records(records_fps);
     
     /********************************  END OF RECORDS ********************************/

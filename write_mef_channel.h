@@ -165,6 +165,9 @@ extern "C" {
     si4 close_annotation(ANNOTATION_STATE* annotation_state);
 #endif
 
+    // This function updates the ".mefd" file, which is an optional MEF 3 extenion, that Persyst reads to load channel information.
+    void update_mefd_file(si1* mef3_session_path, si1* mef3_session_name, si1* chan_map_name, UNIVERSAL_HEADER* passed_in_uh);
+
     // The following function can be used for the use-case where a series of video files should be placed within a MEF 3.0 video channel (.vidd) directory.
     // For now it only works for .avi files.  Clip byte/offset information is not filled in, and the maximum clip bytes is set to the size of the .avi file.
     // The user is responsible for pulling out information like resolution width/height, number of frame, and frame rate.  (The ffprobe open-source tool is 

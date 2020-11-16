@@ -545,8 +545,94 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     channel_state->num_secs_per_segment = num_secs_per_segment;
     channel_state->next_segment_start_time = 0;
     channel_state->start_sample = 0;
+
+    // creating .mefd file is not supported in case of encrypted files, since Persyst won't read encrypted files anyway
+    if (mef_3_level_1_password != NULL || mef_3_level_2_password != NULL)
+        return (0);
+
+    // TBD: a mutex should be used around this function call (or within it) if channel creation is done in a threaded way.
+    update_mefd_file(mef3_session_path, mef3_session_name, chan_map_name, channel_state->metadata_fps->universal_header);
     
     return(0);
+}
+
+void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_map_name, UNIVERSAL_HEADER *passed_in_uh)
+{
+    FILE* mefd_fp;
+    si1 mefd_file_name[MEF_FULL_FILE_NAME_BYTES];
+    UNIVERSAL_HEADER mefd_uh;
+    si1 file_name_output[MEF_FULL_FILE_NAME_BYTES];
+    si1 file_name_input[MEF_FULL_FILE_NAME_BYTES];
+    si4 i;
+
+    // TBD: this function might need to be protected by a mutex if channel creation is done in a threaded way.
+
+    // update MEFD file (used by Persyst)
+    sprintf(mefd_file_name, "%s/%s.mefd", mef3_session_path, mef3_session_name);
+    memset(file_name_output, 0, MEF_FULL_FILE_NAME_BYTES);
+
+    // check for case where .mefd file doesn't exist yet, in which case we create
+    // it and add the currect channel as the first entry.
+    if (access(mefd_file_name, 0) == -1)
+    {
+        // write default universal header
+        memcpy(&mefd_uh, passed_in_uh, UNIVERSAL_HEADER_BYTES);
+        mefd_fp = fopen(mefd_file_name, "wb");
+        fwrite(&mefd_uh, sizeof(UNIVERSAL_HEADER), (size_t)1, mefd_fp);
+        mefd_uh.body_CRC = CRC_START_VALUE;
+
+        // write channel name
+        memset(file_name_output, 0, MEF_FULL_FILE_NAME_BYTES);
+        sprintf(file_name_output, "%s.%s", chan_map_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
+        fwrite(file_name_output, MEF_FULL_FILE_NAME_BYTES, 1, mefd_fp);
+        mefd_uh.body_CRC = CRC_update((ui1*)file_name_output, MEF_FULL_FILE_NAME_BYTES, mefd_uh.body_CRC);
+
+        // rewrite universal header of mefd file, this time with correct info
+        fseek(mefd_fp, 0, SEEK_SET);
+        memset(mefd_uh.channel_name, 0, MEF_BASE_FILE_NAME_BYTES);
+        sprintf(mefd_uh.file_type_string, "%s", "mefd");
+        generate_UUID(mefd_uh.level_UUID);
+        generate_UUID(mefd_uh.file_UUID);
+        mefd_uh.maximum_entry_size = 1024;
+        mefd_uh.number_of_entries = 1;
+        mefd_uh.segment_number = -3; // session level
+        memset(mefd_uh.level_1_password_validation_field, 0, PASSWORD_VALIDATION_FIELD_BYTES);
+        memset(mefd_uh.level_2_password_validation_field, 0, PASSWORD_VALIDATION_FIELD_BYTES);
+        mefd_uh.header_CRC = CRC_calculate(&mefd_uh + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
+        fwrite(&mefd_uh, sizeof(UNIVERSAL_HEADER), (size_t)1, mefd_fp);
+
+        // close .mefd file
+        fclose(mefd_fp);
+        return;
+    }
+
+    // file exists, so read it and see what's in it
+    mefd_fp = fopen(mefd_file_name, "rb+");
+    fread(&mefd_uh, UNIVERSAL_HEADER_BYTES, 1, mefd_fp);
+    sprintf(file_name_output, "%s.%s", chan_map_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
+    for (i = 0; i < mefd_uh.number_of_entries; i++)
+    {
+        fread(&file_name_input, MEF_FULL_FILE_NAME_BYTES, 1, mefd_fp);
+        if (!strncmp(file_name_input, file_name_output, MEF_FULL_FILE_NAME_BYTES))
+        {
+            // this channel is already listed in the .mefd file, so no need to continue
+            fclose(mefd_fp);
+            return;
+        }
+    }
+
+    // at this point, we know we need to add the current channel to the .mefd file
+    // rewrite universal header
+    mefd_uh.number_of_entries++;
+    mefd_uh.body_CRC = CRC_update((ui1*)file_name_output, MEF_FULL_FILE_NAME_BYTES, mefd_uh.body_CRC);
+    mefd_uh.header_CRC = CRC_calculate(&mefd_uh + CRC_BYTES, UNIVERSAL_HEADER_BYTES - CRC_BYTES);
+    e_fseek(mefd_fp, 0, SEEK_SET, mefd_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    (void)e_fwrite(&mefd_uh, sizeof(UNIVERSAL_HEADER), (size_t)1, mefd_fp, mefd_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    fclose(mefd_fp);
+    // reopen in append mode so we can append new file name
+    mefd_fp = fopen(mefd_file_name, "ab+");
+    (void)e_fwrite(&file_name_output, MEF_FULL_FILE_NAME_BYTES, (size_t)1, mefd_fp, mefd_file_name, __FUNCTION__, __LINE__, USE_GLOBAL_BEHAVIOR);
+    fclose(mefd_fp);
 }
 
 si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start, ui4 num_entries,

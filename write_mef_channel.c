@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2021, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -466,8 +466,14 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
         channel_state->metadata_fps->metadata.section_1->section_3_encryption = NO_ENCRYPTION;
     }
     md2 = channel_state->metadata_fps->metadata.time_series_section_2;
-    MEF_strncpy(md2->channel_description, channel_comments, METADATA_CHANNEL_DESCRIPTION_BYTES);
-    MEF_strncpy(md2->session_description, study_comments, METADATA_SESSION_DESCRIPTION_BYTES);
+    if (channel_comments)
+        MEF_strncpy(md2->channel_description, channel_comments, METADATA_CHANNEL_DESCRIPTION_BYTES);
+    else
+        md2->channel_description[0] = '\0';
+    if (session_description)
+        MEF_strncpy(md2->session_description, session_description, METADATA_SESSION_DESCRIPTION_BYTES);
+    else
+        md2->session_description[0] = '\0';
     md2->recording_duration = METADATA_RECORDING_DURATION_NO_ENTRY;
     md2->sampling_frequency = sampling_frequency;
     md2->low_frequency_filter_setting = low_frequency_filter_setting;
@@ -494,10 +500,22 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     md3->recording_time_offset = MEF_globals->recording_time_offset;
     md3->GMT_offset = MEF_globals->GMT_offset;  // TBD does this do anything?
     channel_state->gmt_offset_in_hours = gmt_offset;
-    MEF_strncpy(md3->subject_name_1, subject_first_name, METADATA_SUBJECT_NAME_BYTES);
-    MEF_strncpy(md3->subject_name_2, subject_second_name, METADATA_SUBJECT_NAME_BYTES);
-    MEF_strncpy(md3->subject_ID, subject_id, METADATA_SUBJECT_ID_BYTES);
-    MEF_strncpy(md3->recording_location, institution, METADATA_RECORDING_LOCATION_BYTES);
+    if (subject_first_name)
+        MEF_strncpy(md3->subject_name_1, subject_first_name, METADATA_SUBJECT_NAME_BYTES);
+    else
+        md3->subject_name_1[0] = '\0';
+    if (subject_second_name)
+        MEF_strncpy(md3->subject_name_2, subject_second_name, METADATA_SUBJECT_NAME_BYTES);
+    else
+        md3->subject_name_2[0] = '\0';
+    if (subject_id)
+        MEF_strncpy(md3->subject_ID, subject_id, METADATA_SUBJECT_ID_BYTES);
+    else
+        md3->subject_ID[0] = '\0';
+    if (institution)
+        MEF_strncpy(md3->recording_location, institution, METADATA_RECORDING_LOCATION_BYTES);
+    else
+        md3->recording_location[0] = '\0';
     
     // set up mef3 time series indices file
     channel_state->ts_inds_fps = allocate_file_processing_struct(UNIVERSAL_HEADER_BYTES, TIME_SERIES_INDICES_FILE_TYPE_CODE, NULL, channel_state->metadata_fps, UNIVERSAL_HEADER_BYTES);

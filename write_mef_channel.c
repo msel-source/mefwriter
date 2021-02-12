@@ -1952,8 +1952,16 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     // just one block, as we are assuming there is one "clip" per avi file, for this use-case.
     index_block.start_time = start_time;
     index_block.end_time = end_time;
-    index_block.start_frame = 0;
-    index_block.end_frame = num_frames - 1;
+    if (num_frames > 0)
+    {
+        index_block.start_frame = 0;
+        index_block.end_frame = num_frames - 1;
+    }
+    else
+    {
+        index_block.start_frame = -1;
+        index_block.end_frame = -1;
+    }
     index_block.file_offset = -1; // not filled in, video file type dependent.  TBD: this can be filled in if the video format is known.
     index_block.clip_bytes = -1; // not filled in, video file type dependent.  TBD: this can be filled in if the video format is known.
     memset(index_block.protected_region, 0, VIDEO_INDEX_PROTECTED_REGION_BYTES);

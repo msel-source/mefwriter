@@ -1818,7 +1818,8 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     struct stat sb;
 #endif
     si8 file_size;
-    si1 extension[128];
+    si1 extension[TYPE_BYTES];
+    si1 name[MEF_BASE_FILE_NAME_BYTES];
 
     if (proto_metadata_fps == NULL)
     {
@@ -1826,7 +1827,7 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
         exit(1);
     }
 
-    extract_path_parts(full_file_name, NULL, NULL, extension);
+    extract_path_parts(full_file_name, NULL, name, extension);
     if (!(!strcmp(extension, "AVI") || !strcmp(extension, "avi") || !strcmp(extension, "Avi")))
     {
         fprintf(stderr, "Problem - Video file detected that is not an AVI file!  Code needs to be updated to handle this new type (%s).  Exiting!", extension);
@@ -1834,7 +1835,11 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     }
 
     // create new segment directory
+#ifdef _WIN32
     sprintf(command, "mkdir \"%s.mefd/%s.vidd/%s-%06d.segd\"", output_directory, chan_name, chan_name, segment_num);
+#else
+    sprintf(command, "mkdir -p \"%s.mefd/%s.vidd/%s-%06d.segd\"", output_directory, chan_name, chan_name, segment_num);  // -p makes intermediate directories
+#endif
     system(command);
 
     // copy video file into new directory, renaming the file as we do so (but keeping the same file extension)
@@ -1842,10 +1847,17 @@ void write_video_file_with_one_clip(si1* output_directory, si4 segment_num, si1*
     sprintf(command, "copy \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
     // use only backslashes here, because the "copy" command in Windows 10 is very picky about it.  TBD: check on other Windows versions
     slash_to_backslash(&command);
-#else
-    sprintf(command, "cp \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s\"", full_file_name, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
-#endif
     system(command);
+#else
+    // Unix doesn't allow copying to a new directory and renaming at the same time... so... copy, then rename.  (Ugh!)
+    // copy
+    sprintf(command, "cp \"%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/\"", full_file_name, output_directory, chan_name, chan_name, segment_num);
+    system(command);
+    // rename
+    sprintf(command, "mv \"%s.mefd/%s.vidd/%s-%06d.segd/%s.%s\" \"%s.mefd/%s.vidd/%s-%06d.segd/%s-%06d.%s\"", output_directory, chan_name, chan_name, segment_num, name, extension, output_directory, chan_name, chan_name, segment_num, chan_name, segment_num, extension);
+    system(command);
+#endif
+    
 
     // open file to get file size, and to get crc of video file (reading file a million bytes at a time)
     fp = fopen(full_file_name, "rb");

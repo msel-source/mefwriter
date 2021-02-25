@@ -569,12 +569,12 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
         return (0);
 
     // TBD: a mutex should be used around this function call (or within it) if channel creation is done in a threaded way.
-    update_mefd_file(mef3_session_path, mef3_session_name, chan_map_name, channel_state->metadata_fps->universal_header);
+    update_mefd_file(mef3_session_path, mef3_session_name, chan_map_name, anonymized_subject_name);
     
     return(0);
 }
 
-void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_map_name, UNIVERSAL_HEADER *passed_in_uh)
+void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_name, si1* anonymized_subject_name)
 {
     FILE* mefd_fp;
     si1 mefd_file_name[MEF_FULL_FILE_NAME_BYTES];
@@ -594,14 +594,14 @@ void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_
     if (access(mefd_file_name, 0) == -1)
     {
         // write default universal header
-        memcpy(&mefd_uh, passed_in_uh, UNIVERSAL_HEADER_BYTES);
+        memset(&mefd_uh, 0, UNIVERSAL_HEADER_BYTES);
         mefd_fp = fopen(mefd_file_name, "wb");
         fwrite(&mefd_uh, sizeof(UNIVERSAL_HEADER), (size_t)1, mefd_fp);
         mefd_uh.body_CRC = CRC_START_VALUE;
 
         // write channel name
         memset(file_name_output, 0, MEF_FULL_FILE_NAME_BYTES);
-        sprintf(file_name_output, "%s.%s", chan_map_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
+        sprintf(file_name_output, "%s.%s", chan_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
         fwrite(file_name_output, MEF_FULL_FILE_NAME_BYTES, 1, mefd_fp);
         mefd_uh.body_CRC = CRC_update((ui1*)file_name_output, MEF_FULL_FILE_NAME_BYTES, mefd_uh.body_CRC);
 
@@ -609,7 +609,21 @@ void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_
         fseek(mefd_fp, 0, SEEK_SET);
         memset(mefd_uh.channel_name, 0, MEF_BASE_FILE_NAME_BYTES);
         sprintf(mefd_uh.file_type_string, "%s", "mefd");
-        generate_UUID(mefd_uh.level_UUID);
+        mefd_uh.mef_version_major = MEF_VERSION_MAJOR;
+        mefd_uh.mef_version_minor = MEF_VERSION_MINOR;
+        mefd_uh.byte_order_code = MEF_LITTLE_ENDIAN;
+        mefd_uh.start_time = UUTC_NO_ENTRY;
+        mefd_uh.end_time = UUTC_NO_ENTRY;
+        if (anonymized_subject_name != NULL)
+            MEF_strncpy(mefd_uh.anonymized_name, anonymized_subject_name, UNIVERSAL_HEADER_ANONYMIZED_NAME_BYTES);
+        else
+            MEF_strncpy(mefd_uh.anonymized_name, "not_entered", UNIVERSAL_HEADER_ANONYMIZED_NAME_BYTES);
+        if (mef3_session_name != NULL)
+            MEF_strncpy(mefd_uh.session_name, mef3_session_name, MEF_BASE_FILE_NAME_BYTES);
+        else
+            MEF_strncpy(mefd_uh.session_name, "not_entered", MEF_BASE_FILE_NAME_BYTES);
+        // Set level UUIDs to zero - this should be coordinated with records files at this level, in order for a UUID here to really be valid
+        //generate_UUID(mefd_uh.level_UUID);  // already zero'd out
         generate_UUID(mefd_uh.file_UUID);
         mefd_uh.maximum_entry_size = 1024;
         mefd_uh.number_of_entries = 1;
@@ -627,7 +641,7 @@ void update_mefd_file(si1 *mef3_session_path, si1 *mef3_session_name, si1* chan_
     // file exists, so read it and see what's in it
     mefd_fp = fopen(mefd_file_name, "rb+");
     fread(&mefd_uh, UNIVERSAL_HEADER_BYTES, 1, mefd_fp);
-    sprintf(file_name_output, "%s.%s", chan_map_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
+    sprintf(file_name_output, "%s.%s", chan_name, TIME_SERIES_CHANNEL_DIRECTORY_TYPE_STRING);
     for (i = 0; i < mefd_uh.number_of_entries; i++)
     {
         fread(&file_name_input, MEF_FULL_FILE_NAME_BYTES, 1, mefd_fp);

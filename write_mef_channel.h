@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2021, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -166,7 +166,7 @@ extern "C" {
 #endif
 
     // This function updates the ".mefd" file, which is an optional MEF 3 extenion, that Persyst reads to load channel information.
-    void update_mefd_file(si1* mef3_session_path, si1* mef3_session_name, si1* chan_map_name, UNIVERSAL_HEADER* passed_in_uh);
+    void update_mefd_file(si1* mef3_session_path, si1* mef3_session_name, si1* chan_name, si1* anonymized_subject_name);
 
     // The following function can be used for the use-case where a series of video files should be placed within a MEF 3.0 video channel (.vidd) directory.
     // For now it only works for .avi files.  Clip byte/offset information is not filled in, and the maximum clip bytes is set to the size of the .avi file.

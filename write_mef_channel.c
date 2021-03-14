@@ -1234,6 +1234,7 @@ si4 check_for_new_segment(CHANNEL_STATE *channel_state, ui8 start_time)
     // TBD are these fields still necessary?
     channel_state->number_of_index_entries = 0;
     channel_state->number_of_samples = 0;
+    channel_state->start_sample = 0;
     
     return(0);
 }

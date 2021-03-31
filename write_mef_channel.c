@@ -363,7 +363,7 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     
     
     // get mef3 session name and path from passed directory
-    extract_path_parts(mef3_session_directory_extracted, mef3_session_path, mef3_session_name, extension);
+    extract_path_parts(mef3_session_directory, mef3_session_path_extracted, mef3_session_name, extension);
     MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path_extracted, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
     
     // check for password differences

@@ -82,6 +82,7 @@ si4 append_mef_channel_data(CHANNEL_STATE *channel_state,
     si1			prev_segment_name[MEF_SEGMENT_BASE_FILE_NAME_BYTES];
     si1         command[512];
     si1         extension[TYPE_BYTES];
+    si1			mef3_session_path_extracted[MEF_FULL_FILE_NAME_BYTES];
     si1			mef3_session_path[MEF_FULL_FILE_NAME_BYTES], mef3_session_name[MEF_BASE_FILE_NAME_BYTES];
     si1			channel_path[MEF_FULL_FILE_NAME_BYTES], segment_path[MEF_FULL_FILE_NAME_BYTES], segment_name[MEF_SEGMENT_BASE_FILE_NAME_BYTES];
     UNIVERSAL_HEADER *uh;
@@ -126,8 +127,8 @@ si4 append_mef_channel_data(CHANNEL_STATE *channel_state,
     channel_state->chan_num = prev_segment.metadata_fps->metadata.time_series_section_2->acquisition_channel_number;
     
     // get mef3 session name and path from passed directory
-    extract_path_parts(mef3_session_directory, mef3_session_path, mef3_session_name, extension);
-    MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
+    extract_path_parts(mef3_session_directory, mef3_session_path_extracted, mef3_session_name, extension);
+    MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path_extracted, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
     
     // make mef3 session directory
     // already exists
@@ -324,6 +325,7 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     ui4 max_samps;
     si1	command[512];
     si1 extension[TYPE_BYTES];
+    si1			mef3_session_path_extracted[MEF_FULL_FILE_NAME_BYTES];
     si1			mef3_session_path[MEF_FULL_FILE_NAME_BYTES], mef3_session_name[MEF_BASE_FILE_NAME_BYTES];
     si1			channel_path[MEF_FULL_FILE_NAME_BYTES], segment_path[MEF_FULL_FILE_NAME_BYTES], segment_name[MEF_SEGMENT_BASE_FILE_NAME_BYTES];
     UNIVERSAL_HEADER *uh;
@@ -361,8 +363,8 @@ si4 initialize_mef_channel_data ( CHANNEL_STATE *channel_state,
     
     
     // get mef3 session name and path from passed directory
-    extract_path_parts(mef3_session_directory, mef3_session_path, mef3_session_name, extension);
-    MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
+    extract_path_parts(mef3_session_directory_extracted, mef3_session_path, mef3_session_name, extension);
+    MEF_snprintf(mef3_session_path, MEF_FULL_FILE_NAME_BYTES, "%s/%s.%s", mef3_session_path_extracted, mef3_session_name, SESSION_DIRECTORY_TYPE_STRING);
     
     // check for password differences
     if (mef_3_level_1_password != NULL && mef_3_level_2_password != NULL)

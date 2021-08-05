@@ -844,7 +844,7 @@ si4 process_filled_block( CHANNEL_STATE *channel_state, si4* raw_data_ptr_start,
     metadata_fps->metadata.section_3->GMT_offset = MEF_globals->GMT_offset;
     
     // update metadata recording_duration and end_time for all files
-    uh_meta->end_time = block_hdr_time + (si8) (((((sf8) channel_state->rps->block_header->number_of_samples + 1) / md2->sampling_frequency) * (sf8) 1e6) + (sf8) 0.5);
+    uh_meta->end_time = block_hdr_time + (si8) (((((sf8) channel_state->rps->block_header->number_of_samples) / md2->sampling_frequency) * (sf8) 1e6) + (sf8) 0.5);
     // needs to be offset, since universal header will always be written unencrypted
     if (MEF_globals->recording_time_offset_mode & (RTO_APPLY | RTO_APPLY_ON_OUTPUT))
         apply_recording_time_offset(&uh_meta->end_time);
@@ -1645,7 +1645,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
             mefrec_epoc->timestamp = epoc_temp->timestamp;
             mefrec_epoc->end_timestamp = epoc_temp->end_timestamp;
             mefrec_epoc->duration = epoc_temp->duration;
-            strncpy(mefrec_epoc->type, epoc_temp->type, MEFREC_Epoc_1_0_TYPE_BYTES - 1);
+            strncpy(mefrec_epoc->epoch_type, epoc_temp->epoch_type, MEFREC_Epoc_1_0_EPOCH_TYPE_OFFSET - 1);
             strncpy(mefrec_epoc->text, epoc_temp->text, MEFREC_Epoc_1_0_TEXT_BYTES - 1);
         }
         else

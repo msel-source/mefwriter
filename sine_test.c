@@ -1,5 +1,5 @@
 // Multiscale Electrophysiology Format (MEF) version 3.0
-// Copyright 2020, Mayo Foundation, Rochester MN. All rights reserved.
+// Copyright 2021, Mayo Foundation, Rochester MN. All rights reserved.
 // Written by Matt Stead, Ben Brinkmann, and Dan Crepeau.
 
 // Usage and modification of this source code is governed by the Apache 2.0 license.
@@ -144,7 +144,7 @@ int main()
     epoch_pointer->timestamp = 946684803000000;
     epoch_pointer->end_timestamp = 946684804000000;
     epoch_pointer->duration = epoch_pointer->end_timestamp - epoch_pointer->timestamp;
-    sprintf(epoch_pointer->type, "Generic");
+    sprintf(epoch_pointer->epoch_type, "Generic");
     sprintf(epoch_pointer->text, "My example epoch");
     write_annotation(annotation_state_struct, 946684803000000, "Epoc", epoch_pointer);
 

@@ -1,6 +1,6 @@
 /**********************************************************************************************************************
  
- Copyright 2021, Mayo Foundation, Rochester MN. All rights reserved.
+ Copyright 2022, Mayo Foundation, Rochester MN. All rights reserved.
  
  This library contains functions to convert data samples to MEF version 3.0
  initialize_mef_channel_data() should be called first for each channel, which initializes the data in the channel
@@ -1645,7 +1645,7 @@ si4 write_annotation(ANNOTATION_STATE* annotation_state,
             mefrec_epoc->timestamp = epoc_temp->timestamp;
             mefrec_epoc->end_timestamp = epoc_temp->end_timestamp;
             mefrec_epoc->duration = epoc_temp->duration;
-            strncpy(mefrec_epoc->epoch_type, epoc_temp->epoch_type, MEFREC_Epoc_1_0_EPOCH_TYPE_OFFSET - 1);
+            strncpy(mefrec_epoc->epoch_type, epoc_temp->epoch_type, MEFREC_Epoc_1_0_EPOCH_TYPE_BYTES - 1);
             strncpy(mefrec_epoc->text, epoc_temp->text, MEFREC_Epoc_1_0_TEXT_BYTES - 1);
         }
         else
